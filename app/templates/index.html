@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Predictor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>股價預測網站</h1>
+    <form id="stock-form">
+        <label for="stock-code">選擇股票代碼：</label>
+        <select id="stock-code" name="stock-code">
+            <option value="AAPL">AAPL</option>
+            <option value="GOOGL">GOOGL</option>
+            <option value="MSFT">MSFT</option>
+            <option value="TSLA">TSLA</option>
+            <option value="AMZN">AMZN</option>
+            <option value="NFLX">NFLX</option>
+            <option value="META">META</option>
+            <option value="NVDA">NVDA</option>
+        </select>
+        <button type="button" id="fetch-price">查詢股價</button>
+        <button type="button" id="fetch-trend">顯示股價趨勢</button>
+        <button type="button" id="toggle-theme">切換主題</button>
+        <button type="button" id="predict-stock">預測股價</button>
+    </form>
+    <div id="result"></div>
+    <div>
+        <canvas id="trend-chart" width="400" height="200"></canvas>
+    </div>
+    <div id="prediction-result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let chartInstance = null; // 用於保存圖表實例
+
+        document.getElementById('fetch-price').addEventListener('click', async () => {
+            const stockCode = document.getElementById('stock-code').value;
+            const response = await fetch(`/get_stock_price?stock_code=${stockCode}`);
+            const data = await response.json();
+
+            const resultDiv = document.getElementById('result');
+            if (data.error) {
+                resultDiv.textContent = `錯誤: ${data.error}`;
+            } else {
+                resultDiv.textContent = `股票代碼: ${data.stock_code}, 收盤價: ${data.price}`;
+            }
+        });
+
+        document.getElementById('fetch-trend').addEventListener('click', async () => {
+            const stockCode = document.getElementById('stock-code').value;
+            const response = await fetch(`/get_stock_trend?stock_code=${stockCode}`);
+            const data = await response.json();
+
+            if (data.error) {
+                alert(`錯誤: ${data.error}`);
+            } else {
+                const canvas = document.getElementById('trend-chart');
+                const ctx = canvas.getContext('2d');
+
+                // 如果圖表已存在，先銷毀它
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                const labels = data.history.map(item => item.Date);
+                const prices = data.history.map(item => item.Close);
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `${data.stock_code} 股價趨勢`,
+                            data: prices,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                        },
+                    }
+                });
+            }
+        });
+
+        document.getElementById('predict-stock').addEventListener('click', async () => {
+            const stockCode = document.getElementById('stock-code').value;
+            const response = await fetch(`/predict_stock?stock_code=${stockCode}`);
+            const data = await response.json();
+
+            const predictionDiv = document.getElementById('prediction-result');
+            if (data.error) {
+                predictionDiv.textContent = `錯誤: ${data.error}`;
+            } else {
+                predictionDiv.textContent = `股票代碼: ${data.stock_code}, 預測值: ${data.predictions.join(', ')}`;
+            }
+        });
+
+        const toggleThemeButton = document.getElementById('toggle-theme');
+        toggleThemeButton.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+        });
+    </script>
+</body>
+</html>
