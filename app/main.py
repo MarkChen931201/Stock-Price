@@ -7,6 +7,7 @@ import ssl
 import yfinance as yf
 import pandas as pd
 import joblib
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -24,9 +25,17 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # 載入預訓練模型
 model = joblib.load("model.pkl")
 
+# 定義 Pydantic 模型來驗證輸入資料
+class PredictRequest(BaseModel):
+    features: list
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 @app.get("/get_stock_price")
 async def get_stock_price(stock_code: str):
@@ -56,9 +65,9 @@ async def get_stock_trend(stock_code: str):
         return {"error": str(e)}
 
 @app.post("/predict")
-async def predict(features: list):
+async def predict(request: PredictRequest):
     try:
-        predictions = model.predict(features)
+        predictions = model.predict(request.features)
         return {"predictions": predictions.tolist()}
     except Exception as e:
         return {"error": str(e)}
