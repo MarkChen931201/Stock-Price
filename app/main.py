@@ -8,6 +8,7 @@ import yfinance as yf
 import pandas as pd
 import joblib
 from pydantic import BaseModel
+import uvicorn
 
 app = FastAPI()
 
@@ -71,3 +72,6 @@ async def predict(request: PredictRequest):
         return {"predictions": predictions.tolist()}
     except Exception as e:
         return {"error": str(e)}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)

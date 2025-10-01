@@ -1,0 +1,8 @@
+canvas {
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 95%; /* 保持寬度不變 */
+    height: 1000px; /* 調整高度為 1000px */
+}

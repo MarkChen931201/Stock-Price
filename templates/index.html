@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price</title>
+    <link rel="stylesheet" href="/static/style.css?v=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Stock Price and Trend</h1>
+    <form id="stockForm">
+        <label for="stockCode">Stock Code:</label>
+        <input type="text" id="stockCode" name="stockCode" required>
+        <button type="submit">Get Stock Data</button>
+    </form>
+
+    <div id="stockInfo">
+        <h2>Stock Price</h2>
+        <p id="price"></p>
+    </div>
+
+    <div id="chartContainer">
+        <canvas id="stockChart" style="width: 95%; height: 1000px;"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('stockForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const stockCode = document.getElementById('stockCode').value;
+
+            try {
+                // Fetch stock price
+                const priceResponse = await fetch(`/get_stock_price?stock_code=${stockCode}`);
+                const priceData = await priceResponse.json();
+                console.log('Price Data:', priceData);
+                document.getElementById('price').textContent = priceData.price ? `$${priceData.price}` : priceData.error;
+
+                // Fetch stock trend
+                const trendResponse = await fetch(`/get_stock_trend?stock_code=${stockCode}`);
+                const trendData = await trendResponse.json();
+                console.log('Trend Data:', trendData);
+
+                if (trendData.history) {
+                    const labels = trendData.history.map(item => item.Date);
+                    const candlestickData = trendData.history.map(item => ({
+                        x: item.Date,
+                        o: item.Open,
+                        h: item.High,
+                        l: item.Low,
+                        c: item.Close
+                    }));
+                    const volumes = trendData.history.map(item => item.Volume);
+
+                    const ctx = document.getElementById('stockChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'K-Line',
+                                    data: candlestickData,
+                                    type: 'candlestick',
+                                    yAxisID: 'y',
+                                },
+                                {
+                                    label: 'Volume',
+                                    data: volumes,
+                                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                                    yAxisID: 'y1',
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    position: 'left',
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    position: 'right',
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            if (context.datasetIndex === 0) {
+                                                const data = context.raw;
+                                                return `O: ${data.o}, H: ${data.h}, L: ${data.l}, C: ${data.c}`;
+                                            }
+                                            return `Volume: ${context.raw}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    console.error('No trend data available:', trendData);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('An error occurred while fetching data. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
