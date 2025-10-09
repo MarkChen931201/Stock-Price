@@ -4,58 +4,304 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Price Predictor</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2.0">
+    <style>
+        /* 財務工程風格的內聯樣式 */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: 
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/><path d="M10,80 L20,70 L30,75 L40,60 L50,45 L60,50 L70,35 L80,40 L90,25" fill="none" stroke="rgba(0,200,81,0.3)" stroke-width="2"/><path d="M15,85 L25,78 L35,82 L45,65 L55,50 L65,55 L75,42 L85,47 L95,30" fill="none" stroke="rgba(255,68,68,0.3)" stroke-width="2"/><circle cx="30" cy="75" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="50" cy="45" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="70" cy="35" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="35" cy="82" r="1.5" fill="rgba(255,68,68,0.5)"/><circle cx="55" cy="50" r="1.5" fill="rgba(255,68,68,0.5)"/><circle cx="75" cy="42" r="1.5" fill="rgba(255,68,68,0.5)"/><text x="5" y="15" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">$124.56</text><text x="55" y="15" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">+2.34%</text><text x="5" y="95" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">Vol: 12.5M</text></svg>'),
+                linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f4c75 50%, #3282b8 75%, #bbe1fa 100%);
+            background-size: 200px 200px, cover;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        @keyframes stockTicker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            position: relative;
+            background: linear-gradient(45deg, #3282b8, #bbe1fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        h1::after {
+            content: "📊 AAPL $150.23 ↗ | NVDA $425.87 ↗ | TSLA $241.05 ↘ | MSFT $331.45 ↗ | GOOGL $138.21 ↘ | META $285.73 ↗ | AMZN $127.74 ↗ | JPM $194.85 ↗ | V $256.92 ↗ | COIN $85.43 ↘ | BABA $78.92 ↗ | SPY $428.15 ↗";
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            animation: stockTicker 45s linear infinite;
+            font-family: 'Courier New', monospace;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.7);
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes borderScan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        form::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3282b8, transparent);
+            animation: borderScan 3s infinite;
+        }
+
+        button {
+            background: linear-gradient(45deg, #3282b8, #0f4c75) !important;
+            color: #fff !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #bbe1fa, #3282b8) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(50, 130, 184, 0.4);
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        canvas {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(50, 130, 184, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(187, 225, 250, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(15, 76, 117, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #result {
+            color: #fff;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
     <h1>股價預測網站</h1>
     <form id="stock-form">
         <label for="stock-code">選擇股票代碼：</label>
         <select id="stock-code" name="stock-code">
-            <option value="AAPL">AAPL</option>
-            <option value="GOOGL">GOOGL</option>
-            <option value="MSFT">MSFT</option>
-            <option value="TSLA">TSLA</option>
-            <option value="AMZN">AMZN</option>
-            <option value="NFLX">NFLX</option>
-            <option value="META">META</option>
-            <option value="NVDA">NVDA</option>
+            <!-- 科技巨頭 -->
+            <optgroup label="🖥️ 科技巨頭">
+                <option value="AAPL">AAPL - Apple Inc.</option>
+                <option value="GOOGL">GOOGL - Alphabet Inc.</option>
+                <option value="MSFT">MSFT - Microsoft Corp.</option>
+                <option value="META">META - Meta Platforms</option>
+                <option value="AMZN">AMZN - Amazon.com Inc.</option>
+                <option value="ORCL">ORCL - Oracle Corp.</option>
+                <option value="CRM">CRM - Salesforce Inc.</option>
+                <option value="ADBE">ADBE - Adobe Inc.</option>
+            </optgroup>
+            
+            <!-- 半導體與AI -->
+            <optgroup label="🔬 半導體 & AI">
+                <option value="NVDA">NVDA - NVIDIA Corp.</option>
+                <option value="AMD">AMD - Advanced Micro Devices</option>
+                <option value="INTC">INTC - Intel Corp.</option>
+                <option value="TSM">TSM - Taiwan Semiconductor</option>
+                <option value="QCOM">QCOM - Qualcomm Inc.</option>
+                <option value="AVGO">AVGO - Broadcom Inc.</option>
+            </optgroup>
+            
+            <!-- 電動車與能源 -->
+            <optgroup label="🚗 電動車 & 能源">
+                <option value="TSLA">TSLA - Tesla Inc.</option>
+                <option value="F">F - Ford Motor Co.</option>
+                <option value="GM">GM - General Motors</option>
+                <option value="RIVN">RIVN - Rivian Automotive</option>
+                <option value="LCID">LCID - Lucid Group</option>
+            </optgroup>
+            
+            <!-- 串流媒體與娛樂 -->
+            <optgroup label="🎬 媒體娛樂">
+                <option value="NFLX">NFLX - Netflix Inc.</option>
+                <option value="DIS">DIS - Walt Disney Co.</option>
+                <option value="WBD">WBD - Warner Bros Discovery</option>
+                <option value="PARA">PARA - Paramount Global</option>
+            </optgroup>
+            
+            <!-- 金融服務 -->
+            <optgroup label="🏦 金融服務">
+                <option value="JPM">JPM - JPMorgan Chase</option>
+                <option value="BAC">BAC - Bank of America</option>
+                <option value="GS">GS - Goldman Sachs</option>
+                <option value="V">V - Visa Inc.</option>
+                <option value="MA">MA - Mastercard Inc.</option>
+                <option value="PYPL">PYPL - PayPal Holdings</option>
+            </optgroup>
+            
+            <!-- 生物科技與醫療 -->
+            <optgroup label="🧬 生技醫療">
+                <option value="JNJ">JNJ - Johnson & Johnson</option>
+                <option value="PFE">PFE - Pfizer Inc.</option>
+                <option value="MRNA">MRNA - Moderna Inc.</option>
+                <option value="ABBV">ABBV - AbbVie Inc.</option>
+                <option value="UNH">UNH - UnitedHealth Group</option>
+            </optgroup>
+            
+            <!-- 加密貨幣相關 -->
+            <optgroup label="₿ 加密貨幣">
+                <option value="COIN">COIN - Coinbase Global</option>
+                <option value="MSTR">MSTR - MicroStrategy</option>
+                <option value="HOOD">HOOD - Robinhood Markets</option>
+            </optgroup>
+            
+            <!-- 中概股 -->
+            <optgroup label="🇨🇳 中概股">
+                <option value="BABA">BABA - Alibaba Group</option>
+                <option value="JD">JD - JD.com Inc.</option>
+                <option value="PDD">PDD - PDD Holdings</option>
+                <option value="BIDU">BIDU - Baidu Inc.</option>
+                <option value="NIO">NIO - NIO Inc.</option>
+            </optgroup>
+            
+            <!-- ETF -->
+            <optgroup label="📊 ETF">
+                <option value="SPY">SPY - SPDR S&P 500 ETF</option>
+                <option value="QQQ">QQQ - Invesco QQQ Trust</option>
+                <option value="IWM">IWM - iShares Russell 2000</option>
+                <option value="VTI">VTI - Vanguard Total Stock Market</option>
+            </optgroup>
         </select>
-        <button type="button" id="fetch-price">查詢股價</button>
-        <button type="button" id="fetch-trend">顯示股價趨勢</button>
+        <button type="button" id="fetch-all">查詢並顯示趨勢</button>
         <button type="button" id="toggle-theme">切換主題</button>
         <button type="button" id="predict-stock">預測股價</button>
     </form>
-    <div id="result"></div>
+    
     <div>
-        <canvas id="trend-chart" width="400" height="200"></canvas>
+        <canvas id="trend-chart" width="700" height="400"></canvas>
     </div>
+    <div id="result" style="margin-top: 8px;"></div>
     <div id="prediction-result"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let chartInstance = null; // 用於保存圖表實例
 
-        document.getElementById('fetch-price').addEventListener('click', async () => {
-            const stockCode = document.getElementById('stock-code').value;
-            const response = await fetch(`/get_stock_price?stock_code=${stockCode}`);
-            const data = await response.json();
-
-            const resultDiv = document.getElementById('result');
-            if (data.error) {
-                resultDiv.textContent = `錯誤: ${data.error}`;
-            } else {
-                resultDiv.textContent = `股票代碼: ${data.stock_code}, 收盤價: ${data.price}`;
+        // 自訂K棒圖元素
+        class CandlestickElement extends Chart.Element {
+            draw(ctx) {
+                const {x, open, high, low, close} = this;
+                const halfWidth = 3;
+                
+                ctx.save();
+                
+                // 設定顏色（上漲綠色，下跌紅色）
+                const color = close >= open ? '#00C851' : '#ff4444';
+                ctx.strokeStyle = color;
+                ctx.fillStyle = close >= open ? 'rgba(0, 200, 81, 0.7)' : 'rgba(255, 68, 68, 0.7)';
+                
+                // 畫高低線
+                ctx.beginPath();
+                ctx.moveTo(x, high);
+                ctx.lineTo(x, low);
+                ctx.stroke();
+                
+                // 畫實體K棒
+                const bodyHeight = Math.abs(close - open);
+                const bodyY = Math.min(open, close);
+                
+                ctx.fillRect(x - halfWidth, bodyY, halfWidth * 2, bodyHeight);
+                ctx.strokeRect(x - halfWidth, bodyY, halfWidth * 2, bodyHeight);
+                
+                ctx.restore();
             }
-        });
+        }
 
-        document.getElementById('fetch-trend').addEventListener('click', async () => {
+        document.getElementById('fetch-all').addEventListener('click', async () => {
             const stockCode = document.getElementById('stock-code').value;
-            const response = await fetch(`/get_stock_trend?stock_code=${stockCode}`);
+            const response = await fetch(`/get_stock_data?stock_code=${stockCode}`);
             const data = await response.json();
 
             if (data.error) {
                 alert(`錯誤: ${data.error}`);
             } else {
+                // 顯示最新收盤價
+                const resultDiv = document.getElementById('result');
+                resultDiv.textContent = `股票代碼: ${data.stock_code}, 目前收盤價: ${data.price.toFixed(2)}`;
+
                 const canvas = document.getElementById('trend-chart');
                 const ctx = canvas.getContext('2d');
 
@@ -64,20 +310,55 @@
                     chartInstance.destroy();
                 }
 
+                // 使用多個資料集來模擬K棒效果
                 const labels = data.history.map(item => item.Date);
-                const prices = data.history.map(item => item.Close);
+                const openPrices = data.history.map(item => item.Open);
+                const highPrices = data.history.map(item => item.High);
+                const lowPrices = data.history.map(item => item.Low);
+                const closePrices = data.history.map(item => item.Close);
 
                 chartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: `${data.stock_code} 股價趨勢`,
-                            data: prices,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 2,
-                            fill: false
-                        }]
+                        datasets: [
+                            {
+                                label: '最高價',
+                                data: highPrices,
+                                borderColor: 'rgba(128, 128, 128, 0.5)',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1,
+                                pointRadius: 0,
+                                fill: false
+                            },
+                            {
+                                label: '最低價',
+                                data: lowPrices,
+                                borderColor: 'rgba(128, 128, 128, 0.5)',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1,
+                                pointRadius: 0,
+                                fill: false
+                            },
+                            {
+                                label: '開盤價',
+                                data: openPrices,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                fill: false
+                            },
+                            {
+                                label: '收盤價',
+                                data: closePrices,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                borderWidth: 3,
+                                pointRadius: 3,
+                                fill: false
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -85,7 +366,30 @@
                             legend: {
                                 position: 'top',
                             },
+                            title: {
+                                display: true,
+                                text: `${data.stock_code} 股價走勢圖（OHLC）`
+                            }
                         },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: '股價 ($)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '日期'
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
                     }
                 });
             }
@@ -93,14 +397,51 @@
 
         document.getElementById('predict-stock').addEventListener('click', async () => {
             const stockCode = document.getElementById('stock-code').value;
-            const response = await fetch(`/predict_stock?stock_code=${stockCode}`);
-            const data = await response.json();
-
             const predictionDiv = document.getElementById('prediction-result');
-            if (data.error) {
-                predictionDiv.textContent = `錯誤: ${data.error}`;
-            } else {
-                predictionDiv.textContent = `股票代碼: ${data.stock_code}, 預測值: ${data.predictions.join(', ')}`;
+            
+            // 顯示載入中狀態
+            predictionDiv.innerHTML = '<div style="text-align: center;">🔮 AI正在分析預測中...</div>';
+            
+            try {
+                const response = await fetch(`/predict_stock?stock_code=${stockCode}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    predictionDiv.innerHTML = `<div style="color: #ff4444;">❌ ${data.error}</div>`;
+                } else {
+                    // 判斷漲跌顏色
+                    const changeColor = data.price_change >= 0 ? '#00C851' : '#ff4444';
+                    const changeSymbol = data.price_change >= 0 ? '↗' : '↘';
+                    
+                    predictionDiv.innerHTML = `
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; backdrop-filter: blur(5px);">
+                            <h3 style="margin: 0 0 10px 0; color: #fff;">📈 ${data.stock_code} AI 預測結果</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <strong>目前價格:</strong><br>
+                                    <span style="font-size: 1.2em;">$${data.current_price}</span>
+                                </div>
+                                <div>
+                                    <strong>預測價格:</strong><br>
+                                    <span style="font-size: 1.2em; color: ${changeColor};">$${data.predicted_price} ${changeSymbol}</span>
+                                </div>
+                                <div>
+                                    <strong>預測變動:</strong><br>
+                                    <span style="color: ${changeColor};">$${data.price_change}</span>
+                                </div>
+                                <div>
+                                    <strong>變動幅度:</strong><br>
+                                    <span style="color: ${changeColor}; font-weight: bold;">${data.price_change_pct}%</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.9em; color: rgba(255,255,255,0.7);">
+                                ⚠️ 此預測僅供參考，投資有風險，請謹慎決策
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                predictionDiv.innerHTML = `<div style="color: #ff4444;">❌ 網路錯誤: ${error.message}</div>`;
             }
         });
 

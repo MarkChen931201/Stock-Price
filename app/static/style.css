@@ -1,29 +1,84 @@
 body {
     font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #74ebd5, #9face6);
-    color: #333;
+    background: 
+        /* 財務數據背景圖案 */
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/><path d="M10,80 L20,70 L30,75 L40,60 L50,45 L60,50 L70,35 L80,40 L90,25" fill="none" stroke="rgba(0,200,81,0.3)" stroke-width="2"/><path d="M15,85 L25,78 L35,82 L45,65 L55,50 L65,55 L75,42 L85,47 L95,30" fill="none" stroke="rgba(255,68,68,0.3)" stroke-width="2"/><circle cx="30" cy="75" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="50" cy="45" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="70" cy="35" r="1.5" fill="rgba(0,200,81,0.5)"/><circle cx="35" cy="82" r="1.5" fill="rgba(255,68,68,0.5)"/><circle cx="55" cy="50" r="1.5" fill="rgba(255,68,68,0.5)"/><circle cx="75" cy="42" r="1.5" fill="rgba(255,68,68,0.5)"/><text x="5" y="15" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">$124.56</text><text x="55" y="15" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">+2.34%</text><text x="5" y="95" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">Vol: 12.5M</text></svg>'),
+        /* 主要漸變背景 */
+        linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f4c75 50%, #3282b8 75%, #bbe1fa 100%);
+    background-size: 200px 200px, cover;
+    color: #fff;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* 添加金融氣息的動畫效果 */
+@keyframes stockTicker {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
 }
 
 h1 {
     font-size: 2.5rem;
     margin-bottom: 20px;
     color: #fff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    position: relative;
+    background: linear-gradient(45deg, #3282b8, #bbe1fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+/* 添加股票代碼跑馬燈效果 */
+h1::after {
+    content: "📊 AAPL $150.23 ↗ | GOOGL $2,847.63 ↘ | TSLA $789.12 ↗ | MSFT $331.45 ↗";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    animation: stockTicker 30s linear infinite;
+    font-family: 'Courier New', monospace;
 }
 
 form {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 添加金融風格的邊框動畫 */
+form::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3282b8, transparent);
+    animation: borderScan 3s infinite;
+}
+
+@keyframes borderScan {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 label {
@@ -40,14 +95,37 @@ select, button {
 }
 
 button {
-    background-color: #74ebd5;
+    background: linear-gradient(45deg, #3282b8, #0f4c75);
     color: #fff;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
 }
 
 button:hover {
-    background-color: #9face6;
+    background: linear-gradient(45deg, #bbe1fa, #3282b8);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(50, 130, 184, 0.4);
+}
+
+button:hover::before {
+    left: 100%;
 }
 
 #result {
@@ -59,9 +137,30 @@ button:hover {
 
 canvas {
     margin-top: 20px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+
+/* 添加數據流動效果 */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(50, 130, 184, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(187, 225, 250, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(15, 76, 117, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
 }
 
 /* 暗色主題樣式 */
