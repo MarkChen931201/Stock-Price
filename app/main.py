@@ -66,11 +66,11 @@ async def get_stock_trend(stock_code: str):
         return {"error": str(e)}
 
 @app.get("/get_stock_data")
-async def get_stock_data(stock_code: str):
-    """一次取得目前收盤價與近一個月趨勢資料。"""
+async def get_stock_data(stock_code: str, period: str = "1mo"):
+    """取得股票資料，支援不同時間範圍。"""
     try:
         stock = yf.Ticker(stock_code)
-        hist = stock.history(period="1mo")
+        hist = stock.history(period=period)
         if hist.empty:
             return {"error": "No data found for the given stock code."}
 
@@ -82,9 +82,16 @@ async def get_stock_data(stock_code: str):
         if isinstance(hist_reset.loc[0, "Date"], pd.Timestamp):
             hist_reset["Date"] = hist_reset["Date"].dt.strftime("%Y-%m-%d")
 
+        # 計算統計資訊
+        price_change = float(hist["Close"].iloc[-1] - hist["Close"].iloc[0])
+        price_change_pct = (price_change / float(hist["Close"].iloc[0])) * 100
+        
         return {
             "stock_code": stock_code,
             "price": latest_close,
+            "price_change": round(price_change, 2),
+            "price_change_pct": round(price_change_pct, 2),
+            "period": period,
             "history": hist_reset.to_dict(orient="records"),
         }
     except Exception as e:

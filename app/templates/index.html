@@ -122,14 +122,20 @@
 
         canvas {
             margin-top: 20px;
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95)) !important;
             backdrop-filter: blur(10px);
             border-radius: 15px;
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
+        }
+
+        /* K棒圖容器 */
+        #trend-chart {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         body::before {
@@ -245,13 +251,36 @@
                 <option value="VTI">VTI - Vanguard Total Stock Market</option>
             </optgroup>
         </select>
-        <button type="button" id="fetch-all">查詢並顯示趨勢</button>
-        <button type="button" id="toggle-theme">切換主題</button>
-        <button type="button" id="predict-stock">預測股價</button>
+        <label for="time-range" style="margin-left: 20px;">時間範圍：</label>
+        <select id="time-range" name="time-range" style="margin-right: 10px;">
+            <option value="1wk">1週</option>
+            <option value="1mo" selected>1個月</option>
+            <option value="3mo">3個月</option>
+            <option value="6mo">6個月</option>
+            <option value="1y">1年</option>
+        </select>
+        <br><br>
+        <button type="button" id="fetch-all">📊 查詢並顯示趨勢</button>
+        <button type="button" id="add-favorite">⭐ 加入收藏</button>
+        <button type="button" id="predict-stock">🔮 預測股價</button>
+        <button type="button" id="toggle-theme">🌙 切換主題</button>
     </form>
     
-    <div>
-        <canvas id="trend-chart" width="700" height="400"></canvas>
+    <!-- 收藏股票區域 -->
+    <div id="favorites-section" style="margin: 10px 0;">
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; backdrop-filter: blur(5px);">
+            <strong>📌 我的收藏：</strong>
+            <div id="favorites-list" style="margin-top: 5px;">
+                <span style="color: rgba(255,255,255,0.7); font-size: 0.9em;">尚無收藏股票</span>
+            </div>
+        </div>
+    </div>
+    
+    <form style="display: none;">
+    </form>
+    
+    <div style="position: relative; height: 500px; width: 100%; max-width: 900px;">
+        <canvas id="trend-chart"></canvas>
     </div>
     <div id="result" style="margin-top: 8px;"></div>
     <div id="prediction-result"></div>
@@ -260,47 +289,26 @@
     <script>
         let chartInstance = null; // 用於保存圖表實例
 
-        // 自訂K棒圖元素
-        class CandlestickElement extends Chart.Element {
-            draw(ctx) {
-                const {x, open, high, low, close} = this;
-                const halfWidth = 3;
-                
-                ctx.save();
-                
-                // 設定顏色（上漲綠色，下跌紅色）
-                const color = close >= open ? '#00C851' : '#ff4444';
-                ctx.strokeStyle = color;
-                ctx.fillStyle = close >= open ? 'rgba(0, 200, 81, 0.7)' : 'rgba(255, 68, 68, 0.7)';
-                
-                // 畫高低線
-                ctx.beginPath();
-                ctx.moveTo(x, high);
-                ctx.lineTo(x, low);
-                ctx.stroke();
-                
-                // 畫實體K棒
-                const bodyHeight = Math.abs(close - open);
-                const bodyY = Math.min(open, close);
-                
-                ctx.fillRect(x - halfWidth, bodyY, halfWidth * 2, bodyHeight);
-                ctx.strokeRect(x - halfWidth, bodyY, halfWidth * 2, bodyHeight);
-                
-                ctx.restore();
-            }
-        }
-
         document.getElementById('fetch-all').addEventListener('click', async () => {
             const stockCode = document.getElementById('stock-code').value;
-            const response = await fetch(`/get_stock_data?stock_code=${stockCode}`);
+            const timeRange = document.getElementById('time-range').value;
+            const response = await fetch(`/get_stock_data?stock_code=${stockCode}&period=${timeRange}`);
             const data = await response.json();
 
             if (data.error) {
                 alert(`錯誤: ${data.error}`);
             } else {
-                // 顯示最新收盤價
+                // 顯示詳細資訊
                 const resultDiv = document.getElementById('result');
-                resultDiv.textContent = `股票代碼: ${data.stock_code}, 目前收盤價: ${data.price.toFixed(2)}`;
+                const changeColor = data.price_change >= 0 ? '#00C851' : '#ff4444';
+                const changeSymbol = data.price_change >= 0 ? '↗' : '↘';
+                
+                resultDiv.innerHTML = `
+                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; backdrop-filter: blur(5px);">
+                        <strong>${data.stock_code}</strong> | 目前: <span style="font-size: 1.1em;">$${data.price.toFixed(2)}</span> | 
+                        期間變動: <span style="color: ${changeColor}; font-weight: bold;">${data.price_change >= 0 ? '+' : ''}${data.price_change} (${data.price_change_pct >= 0 ? '+' : ''}${data.price_change_pct}%) ${changeSymbol}</span>
+                    </div>
+                `;
 
                 const canvas = document.getElementById('trend-chart');
                 const ctx = canvas.getContext('2d');
@@ -310,88 +318,125 @@
                     chartInstance.destroy();
                 }
 
-                // 使用多個資料集來模擬K棒效果
-                const labels = data.history.map(item => item.Date);
-                const openPrices = data.history.map(item => item.Open);
-                const highPrices = data.history.map(item => item.High);
-                const lowPrices = data.history.map(item => item.Low);
-                const closePrices = data.history.map(item => item.Close);
-
-                chartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: '最高價',
-                                data: highPrices,
-                                borderColor: 'rgba(128, 128, 128, 0.5)',
-                                backgroundColor: 'transparent',
-                                borderWidth: 1,
-                                pointRadius: 0,
-                                fill: false
-                            },
-                            {
-                                label: '最低價',
-                                data: lowPrices,
-                                borderColor: 'rgba(128, 128, 128, 0.5)',
-                                backgroundColor: 'transparent',
-                                borderWidth: 1,
-                                pointRadius: 0,
-                                fill: false
-                            },
-                            {
-                                label: '開盤價',
-                                data: openPrices,
-                                borderColor: 'rgba(54, 162, 235, 1)',
-                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                                borderWidth: 2,
-                                pointRadius: 2,
-                                fill: false
-                            },
-                            {
-                                label: '收盤價',
-                                data: closePrices,
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                                borderWidth: 3,
-                                pointRadius: 3,
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            title: {
-                                display: true,
-                                text: `${data.stock_code} 股價走勢圖（OHLC）`
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: '股價 ($)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: '日期'
-                                }
-                            }
-                        },
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        }
+                // 使用Canvas API直接繪製K棒圖
+                const drawCandlestickChart = () => {
+                    const canvas = document.getElementById('trend-chart');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 設置canvas尺寸
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                    
+                    const padding = 60;
+                    const chartWidth = canvas.width - 2 * padding;
+                    const chartHeight = canvas.height - 2 * padding;
+                    
+                    // 清除canvas
+                    ctx.fillStyle = 'rgba(20, 20, 30, 0.95)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 計算價格範圍
+                    const prices = data.history.flatMap(item => [item.High, item.Low]);
+                    const minPrice = Math.min(...prices);
+                    const maxPrice = Math.max(...prices);
+                    const priceRange = maxPrice - minPrice;
+                    
+                    const candleWidth = Math.max(2, chartWidth / data.history.length * 0.7);
+                    const spacing = chartWidth / data.history.length;
+                    
+                    // 繪製標題
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${data.stock_code} K線圖 (${data.period || '1mo'})`, canvas.width / 2, 30);
+                    
+                    // 繪製網格線和座標軸
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 1;
+                    
+                    // 水平網格線
+                    for (let i = 0; i <= 5; i++) {
+                        const y = padding + (chartHeight / 5) * i;
+                        ctx.beginPath();
+                        ctx.moveTo(padding, y);
+                        ctx.lineTo(padding + chartWidth, y);
+                        ctx.stroke();
+                        
+                        // 價格標籤
+                        const price = maxPrice - (priceRange / 5) * i;
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '12px Arial';
+                        ctx.textAlign = 'right';
+                        ctx.fillText(`$${price.toFixed(2)}`, padding - 10, y + 4);
                     }
-                });
+                    
+                    // 繪製K棒
+                    data.history.forEach((item, index) => {
+                        const x = padding + spacing * index + spacing / 2;
+                        const open = item.Open;
+                        const high = item.High;
+                        const low = item.Low;
+                        const close = item.Close;
+                        
+                        const openY = padding + (maxPrice - open) / priceRange * chartHeight;
+                        const closeY = padding + (maxPrice - close) / priceRange * chartHeight;
+                        const highY = padding + (maxPrice - high) / priceRange * chartHeight;
+                        const lowY = padding + (maxPrice - low) / priceRange * chartHeight;
+                        
+                        // 判斷漲跌
+                        const isUp = close >= open;
+                        const color = isUp ? '#00C851' : '#ff4444';
+                        
+                        // 繪製影線
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x, highY);
+                        ctx.lineTo(x, lowY);
+                        ctx.stroke();
+                        
+                        // 繪製實體
+                        const bodyTop = Math.min(openY, closeY);
+                        const bodyHeight = Math.abs(closeY - openY) || 1;
+                        
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, bodyHeight);
+                        
+                        // 如果是上漲K棒，實體部分使用空心
+                        if (isUp) {
+                            ctx.fillStyle = 'rgba(20, 20, 30, 0.95)';
+                            ctx.fillRect(x - candleWidth/2 + 1, bodyTop + 1, candleWidth - 2, Math.max(0, bodyHeight - 2));
+                        }
+                    });
+                    
+                    // 繪製日期標籤
+                    const dateStep = Math.max(1, Math.floor(data.history.length / 6));
+                    data.history.forEach((item, index) => {
+                        if (index % dateStep === 0 || index === data.history.length - 1) {
+                            const x = padding + spacing * index + spacing / 2;
+                            ctx.fillStyle = '#fff';
+                            ctx.font = '10px Arial';
+                            ctx.textAlign = 'center';
+                            const date = new Date(item.Date).toLocaleDateString('zh-TW', {month: 'short', day: 'numeric'});
+                            ctx.fillText(date, x, canvas.height - 10);
+                        }
+                    });
+                    
+                    // 座標軸標籤
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('日期', canvas.width / 2, canvas.height - 30);
+                    
+                    ctx.save();
+                    ctx.translate(20, canvas.height / 2);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.fillText('股價 ($)', 0, 0);
+                    ctx.restore();
+                };
+                
+                // 執行繪製
+                drawCandlestickChart();
             }
         });
 
@@ -444,6 +489,40 @@
                 predictionDiv.innerHTML = `<div style="color: #ff4444;">❌ 網路錯誤: ${error.message}</div>`;
             }
         });
+
+        // 收藏功能
+        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        
+        function updateFavoritesList() {
+            const favList = document.getElementById('favorites-list');
+            if (favorites.length === 0) {
+                favList.innerHTML = '<span style="color: rgba(255,255,255,0.7); font-size: 0.9em;">尚無收藏股票</span>';
+            } else {
+                favList.innerHTML = favorites.map(stock => 
+                    `<span style="background: rgba(50,130,184,0.3); padding: 3px 8px; margin: 2px; border-radius: 15px; display: inline-block; cursor: pointer;" 
+                     onclick="selectStock('${stock}')" title="點擊選擇">${stock}</span>`
+                ).join('');
+            }
+        }
+        
+        function selectStock(stockCode) {
+            document.getElementById('stock-code').value = stockCode;
+        }
+        
+        document.getElementById('add-favorite').addEventListener('click', () => {
+            const stockCode = document.getElementById('stock-code').value;
+            if (!favorites.includes(stockCode)) {
+                favorites.push(stockCode);
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                updateFavoritesList();
+                alert(`✅ ${stockCode} 已加入收藏！`);
+            } else {
+                alert(`⚠️ ${stockCode} 已在收藏清單中！`);
+            }
+        });
+        
+        // 初始化收藏清單
+        updateFavoritesList();
 
         const toggleThemeButton = document.getElementById('toggle-theme');
         toggleThemeButton.addEventListener('click', () => {
