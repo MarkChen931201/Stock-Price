@@ -71,6 +71,42 @@ docker ps
 - **API文檔**：http://localhost:8000/docs
 - **健康檢查**：http://localhost:8000/health
 
+## 🌍 透過 Nginx + DuckDNS 反向代理（HTTPS）
+
+以下配置讓你使用 DuckDNS 網域（例如 `myhome.duckdns.org`）+ Let's Encrypt 憑證，將外網 443/80 反向代理到 FastAPI：
+
+1) 申請 DuckDNS 網域與 Token（https://www.duckdns.org/）
+
+2) 編輯 `nginx/conf.d/stock-price.conf`
+- 將 `YOUR_DUCKDNS_DOMAIN` 替換為你的網域（例：`myhome.duckdns.org`）。
+
+3) 建立 `.env` 檔案（放在專案根目錄），內容包含：
+```
+DUCKDNS_SUBDOMAINS=myhome
+DUCKDNS_TOKEN=你的DuckDNS Token
+DOMAIN=myhome.duckdns.org
+EMAIL=你用於申請憑證的Email
+```
+
+4) 啟動服務（先讓 nginx 起來）
+```bash
+docker compose up -d nginx duckdns stock-price-app
+```
+
+5) 首次簽發憑證（webroot 模式）
+```bash
+DOMAIN=$DOMAIN EMAIL=$EMAIL bash scripts/init-letsencrypt.sh
+```
+
+6) 啟動自動續期服務（每天固定嘗試續期）
+```bash
+docker compose up -d certbot
+```
+
+完成後，瀏覽器以 `https://myhome.duckdns.org/` 存取，即由 Nginx 反代到後端 `stock-price-app:8000`。
+
+注意：你的路由器/雲主機需將 80/443 端口轉發到此機器；若在 macOS 本機，請確保 Docker Desktop 未被其他服務佔用 80/443。
+
 ## 🛠️ Docker 管理命令
 
 ```bash
@@ -148,6 +184,15 @@ ls -la model.pkl
 # 查看詳細日誌
 docker logs stock-price-app
 ```
+
+4. **顯示「無法獲取股票歷史資料」或 429**
+
+Yahoo 可能在短時間大量請求時回應 429（流量限制）。本專案已內建多來源備援：
+
+- 首選 yfinance（Yahoo Finance）
+- 備援使用 Stooq（pandas-datareader）
+
+若仍遇到暫時性錯誤，請隔幾分鐘再嘗試，或更換網路環境。
 
 ## 🎯 API 端點
 

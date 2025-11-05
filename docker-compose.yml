@@ -18,3 +18,40 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # 反向代理：Nginx
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - stock-price-app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    restart: unless-stopped
+
+  # 自動更新 DuckDNS 公網 IP 記錄
+  duckdns:
+    image: ghcr.io/linuxserver/duckdns
+    environment:
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS} # 例如：myhome（不含 .duckdns.org）
+      - TOKEN=${DUCKDNS_TOKEN}
+      - TZ=Asia/Taipei
+    restart: unless-stopped
+
+  # 自動更新憑證（每 12 小時嘗試續期一次）
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+      - ./scripts:/scripts:ro
+    entrypoint: /bin/sh -c
+    command: "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"
+
+volumes:
+  certbot-etc:
+  certbot-www:
